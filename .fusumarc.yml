@@ -1,0 +1,34 @@
+meta:
+  title: "Odyssee von C nach C++, ein Reisebericht"
+  thumbnail:
+  description:
+  siteName: fsmaxb.github.io/cppugka-vortrag-odyssee
+  sns:
+slide:
+  loop: false
+  sidebar: true
+  targetBlank: true
+  showIndex: true
+  isVertical: false
+  code:
+    languages:
+      - javascript
+      - cpp
+      - c
+      - rust
+      - protobuf
+      - json
+      - cmake
+      - bash
+      - diff
+    plugins:
+      - line-numbers
+    theme: twilight
+  chart: false
+  math: false
+extends:
+  js:
+  css: ./style.css
+  webpack:
+build:
+  ssr: true

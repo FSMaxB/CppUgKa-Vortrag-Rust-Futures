@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "start": "fusuma start",
+    "build": "fusuma build",
+    "deploy": "fusuma build && fusuma deploy",
+    "pdf": "fusuma pdf"
+  },
+  "devDependencies": {
+    "fusuma": "^1.15.0"
+  }
+}
