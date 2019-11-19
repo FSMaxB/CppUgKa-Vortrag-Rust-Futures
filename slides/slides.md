@@ -1,3 +1,9 @@
+# Poll based futures in rust
+
+## Max Bruckner
+
+---
+
 # Callbacks
 
 ```cpp
@@ -270,3 +276,13 @@ fn poll(&mut self, waker: &Waker) -> Poll<()> {
 
 # Heap-Allokationen
 ## Mei
+TODO
+
+---
+
+# Quellen
+
+
+[RustFest Zürich 2017 - Tokio: How we hit 88mph by Alex Crichton](https://www.youtube.com/watch?v=4QZ0-vIIFug)
+[std::future::Future in der Rust Standardlibrary-Dokumentation](https://doc.rust-lang.org/std/future/trait.Future.html)
+[Aaron Turon: Zero-cost futures in Rust](https://aturon.github.io/blog/2016/08/11/futures/
