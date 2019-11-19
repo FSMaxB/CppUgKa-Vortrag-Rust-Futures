@@ -1,8 +1,8 @@
 meta:
-  title: "Odyssee von C nach C++, ein Reisebericht"
+  title: "Poll based futures in Rust"
   thumbnail:
   description:
-  siteName: fsmaxb.github.io/cppugka-vortrag-odyssee
+  siteName: fsmaxb.github.io/cppugka-vortrag-rust-futures
   sns:
 slide:
   loop: false
