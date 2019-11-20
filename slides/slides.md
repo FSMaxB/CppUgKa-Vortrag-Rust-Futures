@@ -270,8 +270,7 @@ fn poll(&mut self, waker: &Waker) -> Poll<()> {
 ---
 
 # Heap-Allokationen
-## Mei
-TODO
+## Meistens nur einmal pro Task
 
 ---
 
