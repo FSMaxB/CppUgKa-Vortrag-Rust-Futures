@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-type" content="text/html; charset=utf-8"><meta name="theme-color" content="#3498db"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Poll based futures in Rust</title><meta property="og:title" content="Poll based futures in Rust"><meta property="og:type" content="article"><meta property="og:site_name" content="fsmaxb.github.io/cppugka-vortrag-rust-futures"><link href="vendor.7.45dc016252beef0957dd.css" rel="stylesheet"></head><body><div id="root"><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" class="btn-sidebar" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg><article id="webslides"><section class="aligncenter"><h1>Poll based futures in Rust</h1><h2>Max Bruckner</h2></section><section class="aligncenter"><h1>Callbacks</h1><pre><code class="language-cpp">void download(
+    std::string url,
+    std::function&lt;void(std::vector&lt;std::byte&gt;)&gt; callback
+);
+</code></pre></section><section class="aligncenter"><h1>Callbacks</h1><pre><code class="language-cpp">void download(
+    std::string url,
+    std::function&lt;void(std::vector&lt;std::byte&gt;)&gt; callback
+);
+</code></pre><pre><code class="language-cpp">void play_song(std::vector&lt;std::byte&gt; song);
+
+download(
+    &quot;https://example.com/song.opus&quot;,
+    [](auto song) {
+        play_song(song);
+    });
+</code></pre></section><section class="aligncenter"><h1>Komplexeres Beispiel</h1><h2>1. Bild herunterladen.</h2><h2>2. Konvertieren</h2><h2>3. Wieder hochladen</h2></section><section class="aligncenter"><h1>Callbacks (komplexes Beispiel)</h1><pre><code class="language-cpp">download(
+    &quot;https://example.com/image.png&quot;
+    [](auto image) {
+        convert(
+            image,
+            [](auto converted_image) {
+                upload(
+                    converted_image,
+                    &quot;https://example.com/image.webp&quot;,
+                    []() {
+                        // ...
+                    });
+            });
+    });
+</code></pre></section><section class="aligncenter"><h1>Future (aka Promise)</h1><h2>Repräsentiert zukünftiges Ergebnis</h2><ul><li><strong>Async IO</strong></li><li><strong>Arbeit auf anderem Thread</strong></li><li><strong>Kombinatoren</strong></li><li><strong>Timer</strong></li></ul></section><section class="aligncenter"><h1>Beispiel</h1><pre><code class="language-rust">download(&quot;https://example.com/image.png&quot;)
+    .and_then(|image| convert(image)) // redundant closure, I know
+    .and_then(|converted_image|
+        upload(converted_image, &quot;https://example.com/image.webp&quot;))
+    .map(|()| /* ... */ )
+</code></pre></section><section class="aligncenter"><h1>Async/Await</h1><pre><code class="language-rust">let image = download(&quot;https://example.com/image.png&quot;).await;
+let converted_image = convert(image).await;
+upload(converted_image, &quot;https://example.com/image.webp&quot;).await;
+/* ... */
+</code></pre></section><section class="aligncenter"><h1>Typische Implementierung</h1><p>Serviervorschlag</p><p>Sugar free!</p><pre><code class="language-cpp">template &lt;typename Result, typename Arguments&gt;
+struct Future {
+    void start(Arguments arguments);
+    void schedule(std::function&lt;void(Result)&gt; action);
+    /* ... */
+}
+</code></pre><pre><code class="language-cpp">upload_future.schedule([]() { /* ... */});
+conversion_future.schedule([](auto converted_image) {
+    upload_future.start(converted_image);
+});
+download_future.schedule([](auto image) {
+    conversion_future.start(image);
+});
+download_future.start(url);
+</code></pre></section><section class="aligncenter"><h1>Schwierigkeiten</h1><ul><li><strong>Cancelation</strong></li><li><strong>Thread-Synchronisierung</strong> (Wo setze ich fort)</li><li><strong>Heap-Allokationen schwer vermeidbar</strong></li></ul></section><section class="aligncenter"><h1>std::future::Future</h1><pre><code class="language-rust">pub trait Future {
+    type Output;
+
+    fn poll(self: Pin&lt;&amp;mut Self&gt;, cx: &amp;mut Context)
+        -&gt; Poll&lt;Self::Output&gt;;
+}
+</code></pre><pre><code class="language-rust">pub enum Poll&lt;T&gt; {
+    Ready(T),
+    Pending,
+}
+</code></pre></section><section class="aligncenter"><h1>Beispiel: Async IO</h1><pre><code class="language-rust">fn poll(&amp;mut self, waker: &amp;Waker) -&gt; Poll&lt;Vec&lt;u8&gt;&gt; {
+    if not_started {
+        syscall(|result| {
+            self.is_finished = true;
+            self.result = result;
+            waker.wake();
+        });
+        return Pending;
+    }
+
+    if self.is_finished {
+        return Ready(self.result);
+    } else {
+        return Pending;
+    }
+}
+</code></pre></section><section class="aligncenter"><h1>Unser Beispiel</h1><pre><code class="language-rust">download(download_url)
+    .and_then(|image| convert(image))
+    .and_then(|converted_image| upload(converted_image, upload_url))
+    .map(|()| /* ... */ )
+</code></pre><pre><code class="language-rust">let image = download(download_url).await;
+let converted_image = convert(image).await;
+upload(converted_image, upload_url).await;
+/* ... */
+</code></pre></section><section class="aligncenter"><h1>Intern (so ungefähr)</h1><pre><code class="language-rust">enum ImageChain {
+    Downloading(DownloadFuture),
+    Converting(ConversionFuture),
+    Uploading(UploadFuture),
+    Finished,
+}
+</code></pre></section><section class="aligncenter"><h1>Intern (so ungefähr)</h1><pre><code class="language-rust">fn poll(&amp;mut self, waker: &amp;Waker) -&gt; Poll&lt;()&gt; {
+    match self {
+        Downloading(download_future) =&gt; {
+            match download_future.poll(waker) {
+                Ready(image) =&gt; // transition to Converting,
+                Pending =&gt; return Pending, }, },
+        Converting(conversion_future) =&gt; {
+            match conversion_future.poll(waker) {
+                Ready(image) =&gt; // transition to Uploading,
+                Pending =&gt; return Pending, } },
+        Uploading(upload_future) =&gt; {
+            Ready(()) =&gt; /* ... */ // also transition to Finish.,
+            Pending =&gt; return Pending,
+        },
+        Finished =&gt; panic!(&quot;invalid&quot;),
+    }
+}
+</code></pre></section><section class="aligncenter"><h1>Task (in der Regel)</h1><ul><li><strong>Arbeitseinheit aus vielen Teil-Futures</strong></li><li><strong>Erhält callbacks über Waker</strong></li><li><strong>Scheduling in Task-Queue</strong></li><li><strong>Idr. als Einheit allokiert</strong></li><li><strong>Pollt Top-Level-Future nach wakeup</strong></li></ul><h2>Ist selbst eine Future</h2></section><section class="aligncenter"><h1>In unserem Beispiel:</h1><h2>Ein Task pro Bild-URL</h2><h2>Futures für z.B.</h2><ul><li><strong>TCP-Verbindung</strong></li><li><strong>TLS-Handshake</strong></li><li><strong>Umrechnung</strong></li><li><strong>usw.</strong></li></ul></section><section class="aligncenter"><h1>Fazit</h1><h2>Cancelation</h2><ul><li><strong>Einfach nicht mehr pollen</strong></li></ul><h2>Thread-Synchronisierung</h2><ul><li><strong>Nur wo wirklich nötig (e.g. nicht für Combinators)</strong></li></ul><h2>Heap-Allokationen</h2><ul><li><strong>Meistens nur einmal pro Task</strong></li></ul><h2>Und</h2><ul><li><strong>Compiler kann viel weg optimieren</strong></li></ul></section><section class="aligncenter"><h1>Quellen</h1><ul><li><a href="https://www.youtube.com/watch?v=4QZ0-vIIFug">RustFest Zürich 2017 - Tokio: How we hit 88mph by Alex Crichton</a></li><li><a href="https://doc.rust-lang.org/std/future/trait.Future.html">std::future::Future in der Rust Standardlibrary-Dokumentation</a></li><li><a href="https://aturon.github.io/blog/2016/08/11/futures/">Aaron Turon: Zero-cost futures in Rust</a></li></ul><h1>Tipp</h1><ul><li>extundelete kann gelöschte Präsentationen wiederherstellen ...</li></ul></section></article></div><script type="text/javascript" src="runtime.0423063d28c9a1ffb689.bundle.js"></script><script type="text/javascript" src="vendor.7.45dc016252beef0957dd.bundle.js"></script><script type="text/javascript" src="main.4.22cf279734c2b96e7680.bundle.js"></script></body></html>
