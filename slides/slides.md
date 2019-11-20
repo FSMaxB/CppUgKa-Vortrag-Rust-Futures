@@ -1,4 +1,4 @@
-# Poll based futures in rust
+# Poll based futures in Rust
 
 ## Max Bruckner
 
@@ -71,30 +71,25 @@ download(
 
 ---
 
-# Beispiel JavaScript
+# Beispiel
 
-```javascript
+```rust
 download("https://example.com/image.png")
-	.then((image) => convert(image)) // (redundant closure, I know!)
-	.then((converted_image) =>  {
-		upload(converted_image, 'https://example.com/image.webp')
-	})
-	.then(() => /* ... */)
-	.catch((error) => handle_error(error));
+	.and_then(|image| convert(image)) // redundant closure, I know
+	.and_then(|converted_image|
+		upload(converted_image, "https://example.com/image.webp"))
+	.map(|()| /* ... */ )
 ```
 
 ---
 
 # Async/Await
 
-```javascript
-async function image_pipeline(download_url, upload_url) {
-
-	let image = await download(url);
-	let converted_image = await convert(image);
-	await upload(converted_image, upload_url);
-
-}
+```rust
+let image = download("https://example.com/image.png").await;
+let converted_image = convert(image).await;
+upload(converted_image, "https://example.com/image.webp").await;
+/* ... */
 ```
 
 ---
