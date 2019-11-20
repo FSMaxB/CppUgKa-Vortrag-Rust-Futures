@@ -68,6 +68,10 @@ download(
 # Future (aka Promise)
 
 ## Repräsentiert zukünftiges Ergebnis
+* **Async IO**
+* **Arbeit auf anderem Thread**
+* **Kombinatoren**
+* **Timer**
 
 ---
 
@@ -122,10 +126,9 @@ download_future.start(url);
 
 # Schwierigkeiten
 
-## Cancelation
-## Thread-Synchronisierung
-Wo setze ich die Ausführung fort?
-## Heap-Allokationen schwer vermeidbar
+* **Cancelation**
+* **Thread-Synchronisierung** (Wo setze ich fort)
+* **Heap-Allokationen schwer vermeidbar**
 
 ---
 
@@ -227,56 +230,47 @@ fn poll(&mut self, waker: &Waker) -> Poll<()> {
 
 ---
 
-# Futures
-
-## Async IO
-## Arbeit auf anderem Thread
-## Kombinatoren
-## Timer
-
----
-
 # Task (in der Regel)
 
-## Arbeitseinheit aus vielen Teil-Futures
-## Erhält callbacks über Waker
-## Scheduling in Task-Queue
-## Idr. als Einheit allokiert
-## Pollt Top-Level-Future nach wakeup
+* **Arbeitseinheit aus vielen Teil-Futures**
+* **Erhält callbacks über Waker**
+* **Scheduling in Task-Queue**
+* **Idr. als Einheit allokiert**
+* **Pollt Top-Level-Future nach wakeup**
+
+## Ist selbst eine Future
 
 ---
 
 # In unserem Beispiel:
 
-# Ein Task pro Bild-URL
-# Futures für z.B.
-* TCP-Verbindung
-* TLS-Handshake
-* Umrechnung
-* usw.
+## Ein Task pro Bild-URL
+## Futures für z.B.
+* **TCP-Verbindung**
+* **TLS-Handshake**
+* **Umrechnung**
+* **usw.**
 
 ---
 
-# Cancelation
-
-## Einfach nicht mehr pollen
-
----
-
-# Thread-Synchronisierung
-
-## Nur wo wirklich nötig (e.g. nicht für Combinators)
-
----
-
-# Heap-Allokationen
-## Meistens nur einmal pro Task
+# Fazit
+## Cancelation
+* **Einfach nicht mehr pollen**
+## Thread-Synchronisierung
+* **Nur wo wirklich nötig (e.g. nicht für Combinators)**
+## Heap-Allokationen
+* **Meistens nur einmal pro Task**
+## Und
+* **Compiler kann viel weg optimieren**
 
 ---
 
 # Quellen
 
 
-[RustFest Zürich 2017 - Tokio: How we hit 88mph by Alex Crichton](https://www.youtube.com/watch?v=4QZ0-vIIFug)
-[std::future::Future in der Rust Standardlibrary-Dokumentation](https://doc.rust-lang.org/std/future/trait.Future.html)
-[Aaron Turon: Zero-cost futures in Rust](https://aturon.github.io/blog/2016/08/11/futures/
+* [RustFest Zürich 2017 - Tokio: How we hit 88mph by Alex Crichton](https://www.youtube.com/watch?v=4QZ0-vIIFug)
+* [std::future::Future in der Rust Standardlibrary-Dokumentation](https://doc.rust-lang.org/std/future/trait.Future.html)
+* [Aaron Turon: Zero-cost futures in Rust](https://aturon.github.io/blog/2016/08/11/futures/)
+
+# Tipp
+* extundelete kann gelöschte Präsentationen wiederherstellen ...
